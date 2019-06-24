@@ -1,30 +1,30 @@
 import csv
 import os
-from bs4 import BeautifulSoup
+import argparse
 
 class PassageReteiver:
     def __init__(self, csv, path):
-        self.fieldnames = ['TOPIC', 'PMID', 'OFFSET', 'LENGTH']
+        self.fieldnames = ['TOPIC', 'PMID', 'OFFSET', 'LENGTH', 'Total_PMID', 'Location']
         self.list = []
         self.csv = csv
         self.path = path
 
-    def retrive(self, topic, pmid, offset, length):
-        print('Retriveing pmid. Wait')
-        for dirpath, dirnames, files in os.walk(self.path):
-            #print (dirnames, dirpath)
-            #print ('pmid %s' % pmid)
-            #print (files)
-            if pmid in files:
-                print(os.path.join(dirpath, pmid))
-                print(40 * '*')
-                print('Reading %s in path %s with offset %s & length %s' % (pmid, os.path.join(dirpath), offset, length))
-                print(40 * '*')
-                with open(os.path.join(dirpath, pmid), 'r') as file:
-                    #text = ''.join(BeautifulSoup(file, "html.parser").findAll(text=True))
-                    text = file.read()
-                    print(text[offset:offset+length])
-                print(40 * '*')
+    def retrive(self, topic, pmid, offset, length, total_pmid, location):
+        html_file = self.path + '\\' + location + '\\' + pmid
+        if os.path.exists(html_file):
+            print('Retrieving data from %s with length %s offset %s' % (html_file, length, offset))
+            print(len('Retrieving data from ' + html_file + ' with length ' + str(length) +
+                      ' offset ' + str(offset)) * '*')
+            
+            with open(html_file) as string:
+                print (string.seek(offset))
+                while string.tell() < offset+length:
+                    print (string.readline(),end='')
+            #print(string.seek([offset:length+offset]))
+            #print(len(string))
+
+        else:
+            print('File does not exist %s' % (html_file))
         
     def read_csv(self):    
         with open(self.csv) as csvfile:
@@ -35,23 +35,27 @@ class PassageReteiver:
             row = next(csvreader)
             count = 0
             for row in csvreader:
-                if count < 100:
+                if count < 2:
                     topic = row['TOPIC']
                     pmid = row['PMID']
                     offset = row['OFFSET']
                     length = row['LENGTH']
-                    #print ('%s,%s,%s,%s' % (topic, pmid, offset, length))
-                    list = [topic, pmid, offset, length]
+                    total_pmid = row['Total_PMID']
+                    location = row['Location']
+                    list = [topic, pmid, offset, length, total_pmid, location]
                     self.list.append(list)
                     count += 1
-            print('Fetched RelevanceDataset')
 
-    def     run(self):
+    def run(self):
         self.read_csv()
-        #print (len(self.list))
         for item in self.list:
-            self.retrive(item[0], (item[1] + '.html'), int(item[2]), int(item[3]))
+            self.retrive(item[0], (item[1] + '.html'), int(item[2]), int(item[3]), item[4], item[5])
+
+parser = argparse.ArgumentParser()
+parser.add_argument("-d", "--dataset", help="A valid dataset")
+parser.add_argument("-p", "--path", help="A valid location to journal")
+ARGS = parser.parse_args()
 
 if __name__ == '__main__':
-    app = PassageReteiver('RelevanceDataset.csv', '.')
+    app = PassageReteiver(ARGS.dataset, ARGS.path)
     app.run()
